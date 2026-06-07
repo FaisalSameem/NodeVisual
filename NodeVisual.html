@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>linked list visualizer · pointers & memory</title>
+  <style>
+    :root {
+      --bg: #F8FAFC;
+      --workspace-bg: #F1F5F9;
+      --card-bg: #FFFFFF;
+      --card-border: #334155;
+      --text-primary: #0F172A;
+      --text-secondary: #1E293B;
+      --text-muted: #475569;
+      --accent: #2563EB;
+      --accent-light: #3B82F6;
+      --warning: #D97706;
+      --warning-bg: #FEF3C7;
+      --danger: #DC2626;
+      --handle-color: #F59E0B;
+      --toolbar-bg: #FFFFFF;
+      --toolbar-border: #CBD5E1;
+      --shadow: 0 6px 20px rgba(0,0,0,0.35);
+      --shadow-lg: 0 16px 40px rgba(0,0,0,0.45);
+      --grid-dot: #CBD5E1;
+      --pointer-bg: #FFFFFF;
+      --pointer-border: #B45309;
+      --next-bg: #F1F5F9;
+    }
+
+    .dark-mode {
+      --bg: #000000;
+      --workspace-bg: #0A0A0A;
+      --card-bg: #1e293b;
+      --card-border: #566983;
+      --text-primary: #F1F5F9;
+      --text-secondary: #CBD5E1;
+      --text-muted: #94A3B8;
+      --accent: #3B82F6;
+      --accent-light: #60A5FA;
+      --warning: #FBBF24;
+      --warning-bg: #78350F;
+      --danger: #DC2626;
+      --handle-color: #F59E0B;
+      --toolbar-bg: #0A0A0A;
+      --toolbar-border: #1E1E3A;
+      --shadow: 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-lg: 0 12px 28px rgba(0,0,0,0.6);
+      --grid-dot: #1E1E2E;
+      --pointer-bg: #16213E;
+      --pointer-border: #F59E0B;
+      --next-bg: #0F172A;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      color: var(--text-primary);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .toolbar {
+      background: var(--toolbar-bg);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid var(--toolbar-border);
+      box-shadow: var(--shadow);
+      z-index: 20;
+      flex-wrap: wrap;
+      position: relative;
+    }
+
+    .tool-btn {
+      background: var(--accent);
+      border: none;
+      color: white;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 10px 22px;
+      border-radius: 40px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 0.3px;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      white-space: nowrap;
+    }
+
+    .tool-btn.warning {
+      background: var(--warning);
+      box-shadow: 0 2px 8px rgba(217, 119, 6, 0.4);
+      color: #000;
+    }
+
+    .tool-btn.danger {
+      background: var(--danger);
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+    }
+
+    .tool-btn:hover {
+      filter: brightness(1.15);
+      transform: translateY(-1px);
+    }
+
+    .theme-toggle {
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      border-radius: 30px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-primary);
+      transition: all 0.2s;
+      margin-left: auto;
+    }
+
+    .separator {
+      width: 1px;
+      height: 28px;
+      background: var(--card-border);
+      margin: 0 4px;
+    }
+
+    .prebuilt-panel {
+      position: absolute;
+      top: 100%;
+      left: 80px;
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--shadow-lg);
+      display: none;
+      z-index: 25;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .prebuilt-panel.show {
+      display: flex;
+    }
+
+    .prebuilt-input {
+      background: var(--next-bg);
+      border: 2px solid var(--card-border);
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 1rem;
+      padding: 8px 14px;
+      border-radius: 10px;
+      width: 80px;
+      text-align: center;
+      outline: none;
+    }
+
+    .prebuilt-input:focus {
+      border-color: var(--accent);
+    }
+
+    .prebuilt-btn {
+      background: var(--accent);
+      border: none;
+      color: white;
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 8px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .pointer-name-input {
+      background: var(--next-bg);
+      border: 2px solid var(--pointer-border);
+      color: var(--text-primary);
+      font-weight: 700;
+      font-size: 1.2rem;
+      width: 110px;
+      text-align: center;
+      border-radius: 8px;
+      padding: 4px 8px;
+      outline: none;
+    }
+
+    .workspace {
+      flex: 1;
+      position: relative;
+      background: var(--workspace-bg);
+      background-image: radial-gradient(circle at 25px 25px, var(--grid-dot) 1px, transparent 1px);
+      background-size: 50px 50px;
+      overflow: auto;
+      cursor: default;
+    }
+
+    svg.connections-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .node-card {
+      position: absolute;
+      width: 220px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+      border: 2px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      cursor: grab;
+      user-select: none;
+      transition: box-shadow 0.2s, border-color 0.2s, opacity 0.5s ease, transform 0.5s ease;
+      z-index: 15;
+    }
+
+    .node-card.fading {
+      opacity: 0;
+      transform: scale(0.8);
+      pointer-events: none;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .node-card.dragging {
+      cursor: grabbing;
+      box-shadow: 0 20px 40px rgba(37, 99, 235, 0.3);
+      border-color: var(--accent);
+    }
+
+    .node-card.unreachable {
+      border-color: #EF4444;
+      animation: pulseBorder 2s ease-in-out infinite;
+    }
+
+    @keyframes pulseBorder {
+      0%, 100% { border-color: #EF4444; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+      50% { border-color: #FCA5A5; box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+    }
+
+    .node-header-row {
+      display: flex;
+      border-bottom: 1px solid var(--card-border);
+      color: var(--text-secondary);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .header-value, .header-next {
+      flex: 1;
+      padding: 8px 12px;
+      text-align: center;
+      background: var(--next-bg);
+    }
+
+    .header-value {
+      border-right: 1px solid var(--card-border);
+      border-radius: 14px 0 0 0;
+    }
+
+    .header-next {
+      border-radius: 0 14px 0 0;
+    }
+
+    .node-body-row {
+      display: flex;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .value-cell, .next-cell {
+      flex: 1;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .value-cell {
+      border-right: 1px solid var(--card-border);
+    }
+
+    .value-input {
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 1.2rem;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      outline: none;
+      padding: 10px 12px;
+      transition: background 0.2s;
+    }
+
+    .value-input:focus {
+      background: rgba(37, 99, 235, 0.05);
+    }
+
+    .next-display {
+      font-family: 'Fira Code', 'Courier New', monospace;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 12px;
+    }
+
+    .next-addr {
+      background: var(--next-bg);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .connect-handle {
+      width: 22px;
+      height: 22px;
+      background: var(--handle-color);
+      border-radius: 50%;
+      cursor: grab;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+      transition: transform 0.2s, box-shadow 0.2s;
+      flex-shrink: 0;
+      border: 2px solid #FBBF24;
+    }
+
+    .connect-handle:hover {
+      transform: scale(1.3);
+      box-shadow: 0 0 18px rgba(245, 158, 11, 0.7);
+    }
+
+    .connect-handle:active {
+      cursor: grabbing;
+    }
+
+    .addr-footer {
+      padding: 10px 14px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      border-radius: 0 0 14px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      cursor: default;
+    }
+
+    .addr-footer strong {
+      color: var(--text-primary);
+      margin-right: 4px;
+      font-size: 0.85rem;
+    }
+
+    .addr-value {
+      cursor: pointer;
+      transition: all 0.2s;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .addr-value:hover {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--accent-light);
+    }
+
+    .pointer-card {
+      position: absolute;
+      background: var(--pointer-bg);
+      border-radius: 24px;
+      padding: 12px 24px;
+      box-shadow: var(--shadow-lg);
+      border: 2px solid var(--pointer-border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: grab;
+      z-index: 18;
+      min-width: 110px;
+      transition: box-shadow 0.2s;
+    }
+
+    .pointer-card.dragging {
+      cursor: grabbing;
+      box-shadow: 0 12px 30px rgba(245, 158, 11, 0.4);
+      border-color: #FBBF24;
+    }
+
+    .pointer-name-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      color: var(--warning);
+      font-size: 1.2rem;
+      letter-spacing: 0.5px;
+    }
+
+    .pointer-handle {
+      width: 20px;
+      height: 20px;
+      background: var(--handle-color);
+      border-radius: 50%;
+      cursor: grab;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+      margin-top: 6px;
+      border: 2px solid #FBBF24;
+    }
+
+    .pointer-handle:hover {
+      transform: scale(1.3);
+    }
+
+    .pointer-handle:active {
+      cursor: grabbing;
+    }
+
+    .pointer-value {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .context-menu {
+      position: fixed;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 8px 0;
+      z-index: 300;
+      box-shadow: var(--shadow-lg);
+      display: none;
+    }
+
+    .context-item {
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .context-item:hover {
+      background: var(--next-bg);
+    }
+
+    .context-item.danger {
+      color: var(--danger);
+    }
+
+    .context-item.danger:hover {
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .context-item.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .notification {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: var(--card-bg);
+      border-left: 4px solid var(--accent);
+      padding: 14px 24px;
+      border-radius: 14px;
+      color: var(--text-primary);
+      font-weight: 500;
+      z-index: 300;
+      box-shadow: var(--shadow-lg);
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(20px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="dark-mode">
+<div class="toolbar">
+  <div style="position:relative;">
+    <button class="tool-btn" id="addNodeBtn">● Add Node</button>
+    <div class="prebuilt-panel" id="prebuiltPanel">
+      <input class="prebuilt-input" type="number" id="prebuiltCount" value="5" min="1" max="20" />
+      <button class="prebuilt-btn" id="prebuiltAddBtn">Add List</button>
+    </div>
+  </div>
+  <button class="tool-btn warning" id="addPointerBtn">◉ Add Pointer</button>
+  <span class="separator"></span>
+  <button class="tool-btn danger" id="clearBtn">✕ Clear All</button>
+  <span style="color: var(--text-muted); font-size:0.8rem; margin-left:auto;">
+    drag ● handles to connect · right-click pointer to free
+  </span>
+  <button class="theme-toggle" id="themeToggle">☀️ Light Mode</button>
+</div>
+
+<div class="workspace" id="workspace">
+  <svg class="connections-layer" id="svgLayer"></svg>
+</div>
+
+<div class="context-menu" id="contextMenu"></div>
+
+<script>
+  (function() {
+    const workspace = document.getElementById('workspace');
+    const svg = document.getElementById('svgLayer');
+    const contextMenu = document.getElementById('contextMenu');
+    const themeToggle = document.getElementById('themeToggle');
+    const prebuiltPanel = document.getElementById('prebuiltPanel');
+    const addNodeBtn = document.getElementById('addNodeBtn');
+
+    let nodes = [];
+    let pointers = [];
+    let nextAddress = 1000;
+    let connectionDrag = null;
+    let dragState = null;
+    let isDark = true;
+
+    themeToggle.addEventListener('click', () => {
+      isDark = !isDark;
+      document.body.classList.toggle('dark-mode', isDark);
+      themeToggle.textContent = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+    });
+
+    addNodeBtn.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      prebuiltPanel.classList.toggle('show');
+    });
+
+    document.getElementById('prebuiltAddBtn').addEventListener('click', () => {
+      const count = parseInt(document.getElementById('prebuiltCount').value) || 5;
+      addPrebuiltList(Math.min(Math.max(count, 1), 20));
+      prebuiltPanel.classList.remove('show');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!prebuiltPanel.contains(e.target) && e.target !== addNodeBtn) {
+        prebuiltPanel.classList.remove('show');
+      }
+    });
+
+    function addPrebuiltList(count) {
+      const startX = 200;
+      const baseY = 250;
+      const zigZagOffset = 100;
+      const newNodes = [];
+      
+      for (let i = 0; i < count; i++) {
+        const yOffset = i % 2 === 0 ? 0 : zigZagOffset;
+        const node = new Node(startX + i * 260, baseY + yOffset);
+        node.value = String(Math.floor(Math.random() * 90 + 10));
+        newNodes.push(node);
+        nodes.push(node);
+      }
+      
+      for (let i = 0; i < count - 1; i++) {
+        newNodes[i].nextAddress = newNodes[i + 1].address;
+      }
+      
+      const headPtr = new Pointer('head', startX - 30, baseY - 130);
+      headPtr.targetNodeId = newNodes[0].id;
+      pointers.push(headPtr);
+      
+      renderAll();
+      showNotification(`Added linked list with ${count} nodes and head pointer.`);
+    }
+
+    function generateAddr() {
+      const addr = nextAddress;
+      nextAddress += 10;
+      return addr;
+    }
+
+    class Node {
+      constructor(x, y) {
+        this.id = 'node_' + Date.now() + Math.random().toString(36);
+        this.value = String(Math.floor(Math.random() * 90 + 10));
+        this.address = generateAddr();
+        this.nextAddress = null;
+        this.x = x || 200 + Math.random() * 200;
+        this.y = y || 150 + Math.random() * 200;
+        this.reachable = false;
+      }
+    }
+
+    class Pointer {
+      constructor(name, x, y) {
+        this.id = 'ptr_' + Date.now() + Math.random().toString(36);
+        this.name = name || 'ptr';
+        this.targetNodeId = null;
+        this.x = x || 200;
+        this.y = y || 60;
+      }
+    }
+
+    function computeReachability() {
+      nodes.forEach(n => n.reachable = false);
+      let queue = [];
+      
+      pointers.forEach(p => {
+        if (p.name.toLowerCase().includes('head') && p.targetNodeId) {
+          const target = nodes.find(n => n.id === p.targetNodeId);
+          if (target && !target.reachable) {
+            target.reachable = true;
+            queue.push(target);
+          }
+        }
+      });
+      
+      while (queue.length > 0) {
+        const current = queue.shift();
+        if (current.nextAddress !== null && current.nextAddress !== undefined) {
+          const nextNode = nodes.find(n => n.address === current.nextAddress);
+          if (nextNode && !nextNode.reachable) {
+            nextNode.reachable = true;
+            queue.push(nextNode);
+          }
+        }
+      }
+    }
+
+    function renderAll() {
+      computeReachability();
+      document.querySelectorAll('.node-card, .pointer-card').forEach(el => el.remove());
+      nodes.forEach(node => createNodeDOM(node));
+      pointers.forEach(ptr => createPointerDOM(ptr));
+      drawAllConnections();
+    }
+
+    function createNodeDOM(node) {
+      const card = document.createElement('div');
+      card.className = 'node-card';
+      if (!node.reachable) {
+        card.classList.add('unreachable');
+      }
+      card.setAttribute('data-node-id', node.id);
+      card.style.left = node.x + 'px';
+      card.style.top = node.y + 'px';
+
+      card.innerHTML = `
+        <div class="node-header-row">
+          <div class="header-value">Value</div>
+          <div class="header-next">Next</div>
+        </div>
+        <div class="node-body-row">
+          <div class="value-cell">
+            <input class="value-input" type="text" value="${node.value}" />
+          </div>
+          <div class="next-cell">
+            <span class="next-display">
+              <span class="next-addr">${node.nextAddress !== null ? node.nextAddress : 'NULL'}</span>
+              <div class="connect-handle" data-node-id="${node.id}">●</div>
+            </span>
+          </div>
+        </div>
+        <div class="addr-footer">
+          <strong>Addr:</strong> <span class="addr-value" data-node-id="${node.id}">${node.address}</span>
+        </div>
+      `;
+
+      card.addEventListener('mousedown', (e) => onDragStart(e, 'node', node.id));
+      
+      const valueInput = card.querySelector('.value-input');
+      valueInput.addEventListener('input', (e) => {
+        node.value = e.target.value;
+      });
+      valueInput.addEventListener('mousedown', (e) => e.stopPropagation());
+
+      const handle = card.querySelector('.connect-handle');
+      if (handle) {
+        handle.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          startConnectionDrag(e, 'next', node.id);
+        });
+      }
+
+      const addrValue = card.querySelector('.addr-value');
+      addrValue.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const input = document.createElement('input');
+        input.style.cssText = 'background:var(--next-bg);border:1px solid var(--accent);color:var(--text-primary);font-family:"Fira Code",monospace;font-weight:600;width:70px;text-align:center;border-radius:4px;padding:2px 6px;font-size:0.85rem;outline:none;';
+        input.value = node.address;
+        addrValue.replaceWith(input);
+        input.focus();
+        input.select();
+        input.addEventListener('blur', () => finishAddressEdit(input, node));
+        input.addEventListener('keydown', (ev) => { if(ev.key==='Enter') finishAddressEdit(input, node); });
+        input.addEventListener('mousedown', (e) => e.stopPropagation());
+      });
+
+      workspace.appendChild(card);
+    }
+
+    function finishAddressEdit(input, node) {
+      const newAddr = input.value.trim();
+      if (newAddr && !isNaN(Number(newAddr))) {
+        node.address = Number(newAddr);
+      }
+      renderAll();
+    }
+
+    function createPointerDOM(ptr) {
+      const card = document.createElement('div');
+      card.className = 'pointer-card';
+      card.setAttribute('data-pointer-id', ptr.id);
+      card.style.left = ptr.x + 'px';
+      card.style.top = ptr.y + 'px';
+      
+      const targetNode = ptr.targetNodeId ? nodes.find(n => n.id === ptr.targetNodeId) : null;
+      const displayAddr = targetNode ? targetNode.address : 'NULL';
+
+      card.innerHTML = `
+        <div class="pointer-name-row">
+          <span class="ptr-name-text">${ptr.name}</span>
+        </div>
+        <div class="pointer-handle" data-pointer-id="${ptr.id}">●</div>
+        <div class="pointer-value">↓ ${displayAddr}</div>
+      `;
+
+      card.addEventListener('mousedown', (e) => onDragStart(e, 'pointer', ptr.id));
+      
+      const handle = card.querySelector('.pointer-handle');
+      handle.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        startConnectionDrag(e, 'pointer', ptr.id);
+      });
+
+      card.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showContextMenu(e.clientX, e.clientY, ptr);
+      });
+
+      const nameSpan = card.querySelector('.ptr-name-text');
+      nameSpan.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const input = document.createElement('input');
+        input.className = 'pointer-name-input';
+        input.value = ptr.name;
+        nameSpan.replaceWith(input);
+        input.focus();
+        input.select();
+        input.addEventListener('blur', () => finishRename(input, ptr));
+        input.addEventListener('keydown', (ev) => { if(ev.key==='Enter') finishRename(input, ptr); });
+        input.addEventListener('mousedown', (e) => e.stopPropagation());
+      });
+
+      workspace.appendChild(card);
+    }
+
+    function finishRename(input, ptr) {
+      const newVal = input.value.trim() || 'ptr';
+      ptr.name = newVal;
+      renderAll();
+    }
+
+    function startConnectionDrag(e, type, fromId) {
+      e.preventDefault();
+      connectionDrag = {
+        type: type,
+        fromId: fromId,
+        startX: e.clientX,
+        startY: e.clientY,
+      };
+      
+      const tempLine = document.createElement('div');
+      tempLine.style.cssText = 'position:fixed;border-top:2px dashed #F59E0B;transform-origin:0 0;z-index:200;pointer-events:none;';
+      document.body.appendChild(tempLine);
+      connectionDrag.tempLine = tempLine;
+      
+      window.addEventListener('mousemove', onConnectionDragMove);
+      window.addEventListener('mouseup', onConnectionDragEnd);
+    }
+
+    function onConnectionDragMove(e) {
+      if (!connectionDrag) return;
+      const line = connectionDrag.tempLine;
+      const dx = e.clientX - connectionDrag.startX;
+      const dy = e.clientY - connectionDrag.startY;
+      const length = Math.sqrt(dx*dx+dy*dy);
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      line.style.width = length + 'px';
+      line.style.left = connectionDrag.startX + 'px';
+      line.style.top = connectionDrag.startY + 'px';
+      line.style.transform = `rotate(${angle}deg)`;
+    }
+
+    function onConnectionDragEnd(e) {
+      if (!connectionDrag) return;
+      const { type, fromId, tempLine } = connectionDrag;
+      if (tempLine) tempLine.remove();
+      
+      const elements = document.elementsFromPoint(e.clientX, e.clientY);
+      let targetNodeId = null;
+      
+      for (let el of elements) {
+        if (el.classList && el.classList.contains('node-card')) {
+          targetNodeId = el.getAttribute('data-node-id');
+          break;
+        }
+      }
+
+      if (type === 'next') {
+        const fromNode = nodes.find(n => n.id === fromId);
+        if (fromNode) {
+          if (targetNodeId && targetNodeId !== fromId) {
+            const toNode = nodes.find(n => n.id === targetNodeId);
+            if (toNode) {
+              fromNode.nextAddress = toNode.address;
+            }
+          } else {
+            fromNode.nextAddress = null;
+          }
+        }
+      } else if (type === 'pointer') {
+        const ptr = pointers.find(p => p.id === fromId);
+        if (ptr) {
+          ptr.targetNodeId = targetNodeId || null;
+        }
+      }
+      
+      renderAll();
+      window.removeEventListener('mousemove', onConnectionDragMove);
+      window.removeEventListener('mouseup', onConnectionDragEnd);
+      connectionDrag = null;
+    }
+
+    function onDragStart(e, type, id) {
+      if (e.target.classList.contains('connect-handle') || 
+          e.target.classList.contains('pointer-handle') ||
+          e.target.tagName === 'INPUT') return;
+      e.preventDefault();
+      const clientX = e.clientX, clientY = e.clientY;
+      let item = type === 'node' ? nodes.find(n => n.id === id) : pointers.find(p => p.id === id);
+      if (!item) return;
+      
+      dragState = { type, id, offsetX: clientX - item.x, offsetY: clientY - item.y };
+      
+      const elements = document.querySelectorAll(`[data-${type}-id="${id}"]`);
+      elements.forEach(el => el.classList.add('dragging'));
+      
+      window.addEventListener('mousemove', onDragMove);
+      window.addEventListener('mouseup', onDragEnd);
+    }
+
+    function onDragMove(e) {
+      if (!dragState) return;
+      const { type, id, offsetX, offsetY } = dragState;
+      const newX = e.clientX - offsetX;
+      const newY = e.clientY - offsetY;
+      
+      if (type === 'node') {
+        const node = nodes.find(n => n.id === id);
+        if (node) { node.x = newX; node.y = newY; }
+      } else {
+        const ptr = pointers.find(p => p.id === id);
+        if (ptr) { ptr.x = newX; ptr.y = newY; }
+      }
+      renderAll();
+    }
+
+    function onDragEnd() {
+      if (!dragState) return;
+      const { type, id } = dragState;
+      document.querySelectorAll(`[data-${type}-id="${id}"]`).forEach(el => el.classList.remove('dragging'));
+      window.removeEventListener('mousemove', onDragMove);
+      window.removeEventListener('mouseup', onDragEnd);
+      dragState = null;
+    }
+
+    function freeNodeViaPointer(ptrId) {
+      const ptr = pointers.find(p => p.id === ptrId);
+      if (!ptr || !ptr.targetNodeId) return;
+      
+      const nodeId = ptr.targetNodeId;
+      const nodeCard = document.querySelector(`[data-node-id="${nodeId}"]`);
+      
+      if (nodeCard) {
+        nodeCard.classList.add('fading');
+      }
+      
+      setTimeout(() => {
+        const freedAddress = nodes.find(n => n.id === nodeId)?.address;
+        nodes = nodes.filter(n => n.id !== nodeId);
+        pointers.forEach(p => { if (p.targetNodeId === nodeId) p.targetNodeId = null; });
+        nodes.forEach(n => { 
+          if (n.nextAddress === freedAddress) {
+            n.nextAddress = null;
+          }
+        });
+        ptr.targetNodeId = null;
+        renderAll();
+        showNotification(`free(${ptr.name}) - memory freed successfully.`);
+      }, 500);
+    }
+
+    function clearAll() {
+      nodes = [];
+      pointers = [];
+      nextAddress = 1000;
+      renderAll();
+      showNotification('Canvas cleared.');
+    }
+
+    function showContextMenu(x, y, ptr) {
+      const hasTarget = ptr.targetNodeId !== null;
+      
+      contextMenu.innerHTML = `
+        <div class="context-item danger ${hasTarget ? '' : 'disabled'}" id="freePtr">🗑 free(${ptr.name})</div>
+      `;
+      contextMenu.style.display = 'block';
+      contextMenu.style.left = Math.min(x, window.innerWidth - 180) + 'px';
+      contextMenu.style.top = Math.min(y, window.innerHeight - 80) + 'px';
+      
+      const freeBtn = document.getElementById('freePtr');
+      if (hasTarget) {
+        freeBtn.onclick = () => {
+          freeNodeViaPointer(ptr.id);
+          contextMenu.style.display = 'none';
+        };
+      }
+      
+      const hideMenu = () => { contextMenu.style.display = 'none'; document.removeEventListener('click', hideMenu); };
+      setTimeout(() => document.addEventListener('click', hideMenu), 10);
+    }
+
+    function showNotification(msg, isError = false) {
+      const old = document.querySelector('.notification');
+      if (old) old.remove();
+      const notif = document.createElement('div');
+      notif.className = 'notification';
+      notif.style.borderLeftColor = isError ? '#DC2626' : '#2563EB';
+      notif.textContent = msg;
+      document.body.appendChild(notif);
+      setTimeout(() => notif.remove(), 2500);
+    }
+
+    function drawAllConnections() {
+      svg.innerHTML = '';
+      
+      pointers.forEach(ptr => {
+        if (!ptr.targetNodeId) return;
+        const targetNode = nodes.find(n => n.id === ptr.targetNodeId);
+        if (!targetNode) return;
+        const ptrEl = document.querySelector(`[data-pointer-id="${ptr.id}"]`);
+        const nodeEl = document.querySelector(`[data-node-id="${targetNode.id}"]`);
+        if (!ptrEl || !nodeEl || nodeEl.classList.contains('fading')) return;
+        const ptrRect = ptrEl.getBoundingClientRect();
+        const nodeRect = nodeEl.getBoundingClientRect();
+        const wRect = workspace.getBoundingClientRect();
+        
+        const startX = ptrRect.left + ptrRect.width/2 - wRect.left + workspace.scrollLeft;
+        const startY = ptrRect.top + ptrRect.height - wRect.top + workspace.scrollTop;
+        const endX = nodeRect.left + nodeRect.width/2 - wRect.left + workspace.scrollLeft;
+        const endY = nodeRect.top - wRect.top + workspace.scrollTop;
+        
+        const arrowColor = targetNode.reachable ? '#F59E0B' : '#EF4444';
+        drawArrow(startX, startY, endX, endY, arrowColor);
+      });
+
+      nodes.forEach(node => {
+        if (node.nextAddress === null || node.nextAddress === undefined) return;
+        const targetNode = nodes.find(n => n.address === node.nextAddress);
+        if (!targetNode) return;
+        const fromEl = document.querySelector(`[data-node-id="${node.id}"]`);
+        const toEl = document.querySelector(`[data-node-id="${targetNode.id}"]`);
+        if (!fromEl || !toEl || fromEl.classList.contains('fading') || toEl.classList.contains('fading')) return;
+        const fromRect = fromEl.getBoundingClientRect();
+        const toRect = toEl.getBoundingClientRect();
+        const wRect = workspace.getBoundingClientRect();
+        
+        const startX = fromRect.right - 20 - wRect.left + workspace.scrollLeft;
+        const startY = fromRect.top + fromRect.height/2 - wRect.top + workspace.scrollTop;
+        const endX = toRect.left + 15 - wRect.left + workspace.scrollLeft;
+        const endY = toRect.top + toRect.height/2 - wRect.top + workspace.scrollTop;
+        
+        const arrowColor = node.reachable && targetNode.reachable ? '#60A5FA' : '#EF4444';
+        drawArrow(startX, startY, endX, endY, arrowColor);
+      });
+    }
+
+    function drawArrow(x1, y1, x2, y2, color) {
+      const defs = svg.querySelector('defs') || (() => { const d = document.createElementNS("http://www.w3.org/2000/svg", "defs"); svg.appendChild(d); return d; })();
+      const markerId = `arrow-${color.replace('#','')}`;
+      if (!svg.querySelector(`#${markerId}`)) {
+        const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+        marker.setAttribute("id", markerId);
+        marker.setAttribute("viewBox", "0 0 10 10");
+        marker.setAttribute("refX", "9");
+        marker.setAttribute("refY", "5");
+        marker.setAttribute("markerWidth", "8");
+        marker.setAttribute("markerHeight", "8");
+        marker.setAttribute("orient", "auto");
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
+        path.setAttribute("fill", color);
+        marker.appendChild(path);
+        defs.appendChild(marker);
+      }
+      
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", x1);
+      line.setAttribute("y1", y1);
+      line.setAttribute("x2", x2);
+      line.setAttribute("y2", y2);
+      line.setAttribute("stroke", color);
+      line.setAttribute("stroke-width", "3");
+      line.setAttribute("marker-end", `url(#${markerId})`);
+      line.setAttribute("stroke-linecap", "round");
+      svg.appendChild(line);
+    }
+
+    document.getElementById('addNodeBtn').addEventListener('click', (e) => {
+      if (e.button === 0) {
+        nodes.push(new Node(220 + Math.random()*200, 180 + Math.random()*200));
+        renderAll();
+      }
+    });
+
+    document.getElementById('addPointerBtn').addEventListener('click', () => {
+      const ptr = new Pointer('ptr', 150 + Math.random()*300, 50 + Math.random()*80);
+      pointers.push(ptr);
+      renderAll();
+      
+      setTimeout(() => {
+        const ptrEl = document.querySelector(`[data-pointer-id="${ptr.id}"]`);
+        if (ptrEl) {
+          const nameSpan = ptrEl.querySelector('.ptr-name-text');
+          if (nameSpan) {
+            const input = document.createElement('input');
+            input.className = 'pointer-name-input';
+            input.value = ptr.name;
+            nameSpan.replaceWith(input);
+            input.focus();
+            input.select();
+            input.addEventListener('blur', () => finishRename(input, ptr));
+            input.addEventListener('keydown', (ev) => { if(ev.key==='Enter') finishRename(input, ptr); });
+            input.addEventListener('mousedown', (e) => e.stopPropagation());
+          }
+        }
+      }, 50);
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      clearAll();
+    });
+
+    workspace.addEventListener('scroll', () => renderAll());
+    window.addEventListener('resize', () => renderAll());
+
+    renderAll();
+  })();
+</script>
+</body>
+</html>
